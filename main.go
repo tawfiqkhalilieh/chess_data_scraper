@@ -313,10 +313,34 @@ func FetchGameMovesFromJSON() {
         log.Fatalf("Error parsing JSON: %v", err)
     }
 
+    var game_count int = 0;
+    var multi_file_count int = 0;
+
+    // File path
+    filePath := "output_data/game_information" + strconv.Itoa(multi_file_count) + ".json"
+    // Step 1: Load existing JSON or create new map
+    gameInfo := make(map[string] map[string] interface {})
+
+    if _, err := os.Stat(filePath);
+    err == nil {
+        // File exists, read and unmarshal
+        data, err := ioutil.ReadFile(filePath)
+        if err != nil {
+            log.Fatalf("Error reading file: %v", err)
+        }
+        if len(data) > 0 {
+            err = json.Unmarshal(data, & gameInfo)
+            if err != nil {
+                log.Fatalf("Error parsing JSON: %v", err)
+            }
+        }
+    }
+
     // Loop over the keys and arrays
     for key, values := range gameData {
         fmt.Printf("%s\n", key)
 
+        /*
         var emeregency string = " gm_dmitrijliamputnam2008magnuscarlsenmishanickrpragchessshield12xiaotong2008denlazfabianocaruanahovik_hayrapetyanjavokhir_sindarov05spicycaterpillarwonderfultimegrandelicioushikarukonavets"
         if (strings.Contains(emeregency, key)) {
             fmt.Printf("key: %s\n", key)
@@ -324,6 +348,7 @@ func FetchGameMovesFromJSON() {
         } else {
             fmt.Printf("Key: %s\n", key)
         }
+            */
         
         for _, value := range values {
             var resultMovesArray = [] string {}
@@ -357,26 +382,7 @@ func FetchGameMovesFromJSON() {
                 }
             }
 
-            // File path
-            filePath := "game_information77.json"
-
-            // Step 1: Load existing JSON or create new map
-            gameInfo := make(map[string] map[string] interface {})
-
-            if _, err := os.Stat(filePath);
-            err == nil {
-                // File exists, read and unmarshal
-                data, err := ioutil.ReadFile(filePath)
-                if err != nil {
-                    log.Fatalf("Error reading file: %v", err)
-                }
-                if len(data) > 0 {
-                    err = json.Unmarshal(data, & gameInfo)
-                    if err != nil {
-                        log.Fatalf("Error parsing JSON: %v", err)
-                    }
-                }
-            }
+            
 
             // Step 2: Add/overwrite this game's data
             gameInfo[value] = map[string] interface {} {
@@ -385,9 +391,12 @@ func FetchGameMovesFromJSON() {
                 "blackMoveTimestampsArray": blackMoveTimestampsArray,
             }
 
+            game_count += 1;
+            
             // Step 3: Write back to file
             output, err := json.MarshalIndent(gameInfo, "", "  ")
-            if err != nil {
+
+            if err != nil { 
                 log.Fatalf("Error encoding JSON: %v", err)
             }
 
@@ -396,9 +405,17 @@ func FetchGameMovesFromJSON() {
                 log.Fatalf("Error writing file: %v", err)
             }
 
-            time.Sleep(200 * time.Millisecond) // Pauses execution for 30 seconds 
+            if ( game_count > 5000) {
+                multi_file_count += 1;
+                game_count = 0;
+                filePath = "output_data/game_information" + strconv.Itoa(multi_file_count) + ".json"
+            }
+
+            time.Sleep(250 * time.Millisecond) // Pauses execution for 30 seconds 
                 // fmt.Println("Game information saved successfully.")
         }
+
+        
     }
 }
 
