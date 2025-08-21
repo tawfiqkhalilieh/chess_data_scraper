@@ -16,21 +16,17 @@ import (
 
 func main() {
     // This is the main function that starts the program, Uncomment the call for the function you want to run, if you want to run the entire program, uncomment all the calls. 
+    GamesCollector()
 
     // GamesCollector();
-
     FetchGameMovesFromJSON();
 }
 
 // Fetches 100k+ games of top players from chess.com and saves them to game_ids.json
+// note: this can be used to fetch games of any player, just change the players array - it uses the chess.com API to get the game IDs of players
 func GamesCollector() {
-
-    // 25 { "hikaru", "gmwso", "magnuscarlsen", "fabianocaruana", "lachesisq","lyonbeast", "hansontwitch", "vi_pranav", "VincentKeymer", "anishgiri", "gm_dmitrij", "firouzja2003", "denlaz", "0gzpanda", "javokhir_sindarov05", "rpragchess", "philippians46", "parhamov", "tradjabov", "raunaksadhwani2005", "spicycaterpillar", "chesswarrior7197", "mishanick", "andreikka", "chefshouse"} 
-    // 8 {"grandelicious", "liemle", "wonderfultime", "liamputnam2008", "konavets", "shield12", "tptagain", "xiaotong2008" }
-    // 8 "arseniy_nesterov",  "danielnaroditsky", "macho_2006", "robert_chessmood", "hovik_hayrapetyan", "sanan_sjugirov", "danieldardha2005", "viditchess"
-
-    var players = [3] string {
-        "santoshgupta", "mariogiri", "gmbenjaminbok"}
+    var players = [44] string {
+        "santoshgupta", "mariogiri", "gmbenjaminbok", "arseniy_nesterov",  "danielnaroditsky", "macho_2006", "robert_chessmood", "hovik_hayrapetyan", "sanan_sjugirov", "danieldardha2005", "viditchess", "hikaru", "gmwso", "magnuscarlsen", "fabianocaruana", "lachesisq","lyonbeast", "hansontwitch", "vi_pranav", "VincentKeymer", "anishgiri", "gm_dmitrij", "firouzja2003", "denlaz", "0gzpanda", "javokhir_sindarov05", "rpragchess", "philippians46", "parhamov", "tradjabov", "raunaksadhwani2005", "spicycaterpillar", "chesswarrior7197", "mishanick", "andreikka", "chefshouse", "grandelicious", "liemle", "wonderfultime", "liamputnam2008", "konavets", "shield12", "tptagain", "xiaotong2008" }
 
     for _, name := range players {
         var i int = 0;
@@ -38,6 +34,7 @@ func GamesCollector() {
         var game_ids[] string
 
         for (current_pages == 0 || i != current_pages) {
+            // for future use, you can modify the URL parameters to fetch diffrent time controlled games, e.g. blitz, rapid, classical, etc.
             var url string = "https://www.chess.com/callback/games/extended-archive?locale=en&username=" + name + "&page=" + strconv.Itoa(current_pages) + "&gameResult=won&gameTypeslive%5B%5D=blitz&gameTypeslive%5B%5D=chess&rated=rated&timeSort=desc&location=live&opponentTitle=GM&result=won"
 
             resp, err := http.Get(url)
@@ -201,6 +198,7 @@ func indexOf(s string, c rune) int {
     return -1
 }
 
+// The chess.com API uses the TCN encryption for moves, this function decodes the TCN string into a slice of Move structs
 func decodeTCN(n string)[] Move {
     tcnChars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?{~}(^)[_]@#$,./&-*++="
     pieceChars := "qnrbkp"
@@ -259,7 +257,6 @@ func GetChessGameData(id string)(string, string, error) {
         logError(id) // Log the error to a file
         time.Sleep(120 * time.Second) // Pauses execution for 120 seconds 
         return "", "", nil
-        // return "", "", fmt.Errorf("failed to send GET request: %w", err)
     }
     defer resp.Body.Close()
 
@@ -267,7 +264,6 @@ func GetChessGameData(id string)(string, string, error) {
         logError(id) // Log the error to a file
         time.Sleep(120 * time.Second) // Pauses execution for 120 seconds 
         return "", "", nil
-        // return "", "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
     }
 
     body,
@@ -276,7 +272,6 @@ func GetChessGameData(id string)(string, string, error) {
         logError(id) // Log the error to a file
         time.Sleep(120 * time.Second) // Pauses execution for 120 seconds 
         return "", "", nil
-        // return "", "", fmt.Errorf("failed to read response body: %w", err)
     }
 
     var gameData GameResponse
@@ -284,7 +279,6 @@ func GetChessGameData(id string)(string, string, error) {
         logError(id) // Log the error to a file
         time.Sleep(120 * time.Second) // Pauses execution for 120 seconds 
         return "", "", nil
-        // return "", "", fmt.Errorf("failed to unmarshal JSON: %w", err)
     }
 
     return gameData.Game.MoveList,
@@ -292,6 +286,7 @@ func GetChessGameData(id string)(string, string, error) {
     err
 }
 
+// FetchGameMovesFromJSON reads game IDs from a JSON file and fetches their moves and thinking delays from the public chess.com API
 func FetchGameMovesFromJSON() {
     // Open the JSON file
     file, err := os.Open("game_ids.json")
@@ -317,38 +312,22 @@ func FetchGameMovesFromJSON() {
     var multi_file_count int = 0;
 
     // File path
-    filePath := "output_data/game_information" + strconv.Itoa(multi_file_count) + ".json"
+    filePath := "output2/game_information" + strconv.Itoa(multi_file_count) + ".json"
+    folderName := "output2"
+
     // Step 1: Load existing JSON or create new map
     gameInfo := make(map[string] map[string] interface {})
 
-    if _, err := os.Stat(filePath);
-    err == nil {
-        // File exists, read and unmarshal
-        data, err := ioutil.ReadFile(filePath)
-        if err != nil {
-            log.Fatalf("Error reading file: %v", err)
-        }
-        if len(data) > 0 {
-            err = json.Unmarshal(data, & gameInfo)
-            if err != nil {
-                log.Fatalf("Error parsing JSON: %v", err)
-            }
-        }
+    // Step 2: Add/overwrite this game's data
+    gameInfo["test"] = map[string] interface {} {
+        "moveListArray": []string{},
+        "whiteMoveTimestampsArray": []string{},
+        "blackMoveTimestampsArray": []string{},
     }
 
     // Loop over the keys and arrays
     for key, values := range gameData {
         fmt.Printf("%s\n", key)
-
-        /*
-        var emeregency string = " gm_dmitrijliamputnam2008magnuscarlsenmishanickrpragchessshield12xiaotong2008denlazfabianocaruanahovik_hayrapetyanjavokhir_sindarov05spicycaterpillarwonderfultimegrandelicioushikarukonavets"
-        if (strings.Contains(emeregency, key)) {
-            fmt.Printf("key: %s\n", key)
-            continue
-        } else {
-            fmt.Printf("Key: %s\n", key)
-        }
-            */
         
         for _, value := range values {
             var resultMovesArray = [] string {}
@@ -356,9 +335,6 @@ func FetchGameMovesFromJSON() {
 
             var whiteMoveTimestampsArray[] string
             var blackMoveTimestampsArray[] string
-
-
-            // fmt.Printf("  Value: %s\n", value)
 
             moveList, moveTimestamps, err := GetChessGameData(value) // replace with a real game ID
             if err != nil {
@@ -381,7 +357,6 @@ func FetchGameMovesFromJSON() {
                     blackMoveTimestampsArray = append(blackMoveTimestampsArray, stamp)
                 }
             }
-
             
 
             // Step 2: Add/overwrite this game's data
@@ -393,25 +368,36 @@ func FetchGameMovesFromJSON() {
 
             game_count += 1;
             
-            // Step 3: Write back to file
-            output, err := json.MarshalIndent(gameInfo, "", "  ")
+            
 
-            if err != nil { 
-                log.Fatalf("Error encoding JSON: %v", err)
-            }
+            if ( game_count > 1500) {
+                
+                // Create the directory if it doesn't exist
+                err2 := os.MkdirAll(folderName, 0755) // 0755 grants read/write/execute for owner, read/execute for others
+                if err2 != nil {
+                    fmt.Printf("Error creating directory: %v\n", err)
+                    return
+                }
 
-            err = ioutil.WriteFile(filePath, output, 0644)
-            if err != nil {
-                log.Fatalf("Error writing file: %v", err)
-            }
+                // Step 3: Write back to file
+                output, err := json.MarshalIndent(gameInfo, "", "  ")
 
-            if ( game_count > 5000) {
+                if err != nil { 
+                    log.Fatalf("Error encoding JSON: %v", err)
+                }
+
+                err = ioutil.WriteFile(filePath, output, 0644)
+                if err != nil {
+                    log.Fatalf("Error writing file: %v", err)
+                }
+                
                 multi_file_count += 1;
                 game_count = 0;
-                filePath = "output_data/game_information" + strconv.Itoa(multi_file_count) + ".json"
+                gameInfo = make(map[string] map[string] interface {})
+                filePath = "output2/game_information" + strconv.Itoa(multi_file_count) + ".json"
             }
 
-            time.Sleep(250 * time.Millisecond) // Pauses execution for 30 seconds 
+            time.Sleep(500 * time.Millisecond) // Pauses execution for 30 seconds 
                 // fmt.Println("Game information saved successfully.")
         }
 

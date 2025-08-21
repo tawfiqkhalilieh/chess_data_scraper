@@ -1,3 +1,7 @@
 output/*
 *.json
 errors.*
+
+output2/*
+output_data/
+out_old/
